@@ -5,15 +5,24 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-require("dotenv").config();
+
+// Check if API Key is being read
+if (!process.env.GEMINI_API_KEY) {
+    console.error("❌ GEMINI_API_KEY is missing! Please check .env file.");
+    process.exit(1); // Stop the server if key is missing
+} else {
+    console.log("✅ GEMINI_API_KEY is loaded successfully!");
+
+}
+
+// Set up Google AI API - // Load Google Gemini API Key from .env
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Set up Google AI API - // Load Google Gemini API Key from .env
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Set up Multer for file uploads
 const storage = multer.diskStorage({
@@ -39,37 +48,36 @@ app.get("/test", (req, res) => {
 });
 
 //// API: Upload Audio and Generate Podcast
-// app.post("/api/generate-from-transcript", async (req, res) => {
-//     try {
-//         const { transcript } = req.body;
-//         if (!transcript) {
-//             return res.status(400).json({ error: "Transcript is required" });
-//         }
+app.post("/api/generate-from-transcript", async (req, res) => {
+    try {
+        const { transcript } = req.body;
+        if (!transcript) {
+            return res.status(400).json({ error: "Transcript is required" });
+        }
 
-//         // Mock AI-generated script response
-//         const generatedScript = `
-//             Speaker 1: Welcome to our AI-powered podcast!
-//             Speaker 2: Yes! Today we’re exploring how AI can generate podcasts.
-//         `;
+        // Mock AI-generated script response
+        const generatedScript = `
+            Speaker 1: Welcome to our AI-powered podcast!
+            Speaker 2: Yes! Today we’re exploring how AI can generate podcasts.
+        `;
 
-//         res.json({
-//             success: true,
-//             script: generatedScript,
-//             segments: [
-//                 { speaker: "Speaker 1", text: "Welcome to our AI-powered podcast!" },
-//                 { speaker: "Speaker 2", text: "Yes! Today we’re exploring how AI can generate podcasts." }
-//             ]
-//         });
-//     } catch (error) {
-//         res.status(500).json({ error: "Failed to generate podcast script" });
-//     }
-// });
-
+        res.json({
+            success: true,
+            script: generatedScript,
+            segments: [
+                { speaker: "Speaker 1", text: "Welcome to our AI-powered podcast!" },
+                { speaker: "Speaker 2", text: "Yes! Today we’re exploring how AI can generate podcasts." }
+            ]
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to generate podcast script" });
+    }
+});
 
 
 app.post("/api/generate-podcast", upload.single("audio"), async (req, res) => {
     try {
-        const transcript = req.body.transcript; // Get transcript from request body
+        const transcript = req.body.transcript;
 
         if (!transcript) {
             return res.status(400).json({ error: "Transcript is required." });
@@ -84,24 +92,24 @@ app.post("/api/generate-podcast", upload.single("audio"), async (req, res) => {
                 temperature: 0.5,
                 topP: 0.95,
                 topK: 40,
-                maxOutputTokens: 5500,
+                maxOutputTokens: 1500, // Reduce token limit to avoid API overload
             }
         });
 
-        const prompt = `
-        Act as a podcast scriptwriter. Given the transcript:
-        "${transcript}"
-        Format the output as a structured podcast script, ensuring clear speaker labels and a conversational flow.
-        `;
+        const prompt = `Generate a structured podcast script from the following transcript:\n\n"${transcript}"`;
 
+        // Call Gemini AI
         const response = await model.generateContent(prompt);
-        const aiGeneratedScript = response.candidates[0].content.parts[0].text;
+        console.log("Raw API Response:", JSON.stringify(response, null, 2)); // Debugging log
+
+        // Extract text correctly from Gemini API response
+        const aiGeneratedScript = response.response.candidates[0]?.content?.parts?.[0]?.text || "No script generated.";
 
         console.log("Generated Script:", aiGeneratedScript);
 
         // Format script into structured segments
         const segments = aiGeneratedScript.split("\n").map(line => {
-            const match = line.match(/^(Speaker \d+): (.*)$/);
+            const match = line.match(/^\*\*([^*]+)\*\*:\s*(.*)$/);
             return match ? { speaker: match[1], text: match[2] } : null;
         }).filter(segment => segment !== null);
 
@@ -116,10 +124,6 @@ app.post("/api/generate-podcast", upload.single("audio"), async (req, res) => {
         res.status(500).json({ error: "Failed to generate podcast script" });
     }
 });
-
-
-
-
 
 //// Start the server
 const PORT = process.env.PORT || 9000;
