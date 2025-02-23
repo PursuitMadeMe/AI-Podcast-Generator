@@ -134,11 +134,6 @@ app.post("/api/generate-podcast", upload.single("audio"), async (req, res) => {
 });
 
 
-
-
-
-
-
 app.post("/api/text-to-speech", async (req, res) => {
     try {
         const { script } = req.body;
@@ -194,120 +189,6 @@ app.post("/api/text-to-speech", async (req, res) => {
         res.status(500).json({ error: "Failed to generate speech from text." });
     }
 });
-
-
-
-
-
-// app.post("/api/text-to-speech", async (req, res) => {
-//     try {
-//         const { script } = req.body;
-
-//         if (!script) {
-//             return res.status(400).json({ error: "Script text is required." });
-//         }
-
-//         console.log("Received script for TTS:", script);
-//         console.log("Using ElevenLabs API Key:", process.env.ELEVENLABS_API_KEY ? "✅ Loaded" : "❌ MISSING");
-//         console.log("Using ElevenLabs Voice ID:", process.env.ELEVENLABS_VOICE_ID ? process.env.ELEVENLABS_VOICE_ID : "❌ MISSING");
-
-//         const response = await fetch(
-//             `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}/stream`,
-//             {
-//                 method: "POST",
-//                 headers: {
-//                     "Content-Type": "application/json",
-//                     "xi-api-key": process.env.ELEVENLABS_API_KEY, // Ensure key is sent correctly
-//                 },
-//                 body: JSON.stringify({
-//                     text: script,
-//                     model_id: "eleven_multilingual_v2",
-//                     voice_settings: { stability: 0.5, similarity_boost: 0.8 },
-//                 }),
-//             }
-//         );
-
-//         if (!response.ok) {
-//             const errorResponse = await response.text();
-//             console.error("TTS API Error Response:", errorResponse);
-//             throw new Error(`TTS API Error: ${response.statusText} - ${errorResponse}`);
-//         }
-
-//         const audioBuffer = await response.buffer();
-
-//         // Ensure "generated" folder exists
-//         const generatedDir = "./generated/";
-//         if (!fs.existsSync(generatedDir)) {
-//             fs.mkdirSync(generatedDir);
-//         }
-
-//         // Generate a unique filename for the audio file
-//         const filePath = `./generated/audio_${Date.now()}.mp3`;
-//         fs.writeFileSync(filePath, audioBuffer);
-
-//         res.json({ success: true, audioUrl: filePath });
-
-//     } catch (error) {
-//         console.error("Error generating speech:", error);
-//         res.status(500).json({ error: "Failed to generate speech from text." });
-//     }
-// });
-
-
-// app.post("/api/text-to-speech", async (req, res) => {
-//     try {
-//         const { script } = req.body;
-
-//         if (!script) {
-//             return res.status(400).json({ error: "Script text is required." });
-//         }
-
-//         console.log("Received script for TTS:", script);
-//         console.log("Using ElevenLabs API Key:", process.env.ELEVENLABS_API_KEY ? "✅ Loaded" : "❌ MISSING");
-//         console.log("Using ElevenLabs Voice ID:", process.env.ELEVENLABS_VOICE_ID ? process.env.ELEVENLABS_VOICE_ID : "❌ MISSING");
-
-
-//         const response = await fetch(
-//             `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}/stream`,
-//             {
-//                 method: "POST",
-//                 headers: {
-//                     "Content-Type": "application/json",
-//                     "xi-api-key": process.env.ELEVENLABS_API_KEY,
-//                 },
-//                 body: JSON.stringify({
-//                     text: script,
-//                     model_id: "eleven_multilingual_v2",
-//                     voice_settings: { stability: 0.5, similarity_boost: 0.8 },
-//                 }),
-//             }
-//         );
-
-//         if (!response.ok) {
-//             throw new Error(`TTS API Error: ${response.statusText}`);
-//         }
-
-//         // Ensure the "generated" folder exists
-//         const generatedDir = "./generated/";
-//         if (!fs.existsSync(generatedDir)) {
-//             fs.mkdirSync(generatedDir);
-//         }
-
-//         // Generate a unique filename for the audio file
-//         const filePath = `./generated/audio_${Date.now()}.mp3`;
-//         const fileStream = fs.createWriteStream(filePath);
-
-//         // Stream response data into a file
-//         await streamPipeline(response.body, fileStream);
-
-//         res.json({ success: true, audioUrl: filePath });
-
-//     } catch (error) {
-//         console.error("Error generating speech:", error);
-//         res.status(500).json({ error: "Failed to generate speech from text." });
-//     }
-// });
-
 
 //// Start the server
 const PORT = process.env.PORT || 9000;
