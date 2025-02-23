@@ -82,57 +82,38 @@ app.post("/api/generate-from-transcript", async (req, res) => {
     }
 });
 
-
 app.post("/api/generate-podcast", upload.single("audio"), async (req, res) => {
     try {
-        const transcript = req.body.transcript;
+        let transcript = req.body.transcript;
 
-        if (!transcript) {
-            return res.status(400).json({ error: "Transcript is required." });
+        if (req.file) {
+            console.log("Processing uploaded audio file:", req.file.path);
+            
+            // Simulate audio-to-text processing (replace with actual logic)
+            transcript = "This is a test transcription from the audio.";  
+        }
+        
+        if (!transcript && !req.file) {
+            return res.status(400).json({ error: "Transcript or audio file is required." });
         }
 
         console.log("Received transcript:", transcript);
+        console.log("Received file:", req.file);
 
-        // Generate AI-enhanced podcast script using Gemini API
-        const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
-            generationConfig: {
-                temperature: 0.5,
-                topP: 0.95,
-                topK: 40,
-                maxOutputTokens: 1500, // Reduce token limit to avoid API overload
-            }
-        });
+        // If audio file is uploaded, process it
+        if (req.file) {
+            // TODO: Add logic to process audio file and extract text
+            return res.json({ success: true, script: "Extracted text from audio" });
+        }
 
-        const prompt = `Generate a structured podcast script from the following transcript:\n\n"${transcript}"`;
-
-        // Call Gemini AI
-        const response = await model.generateContent(prompt);
-        console.log("Raw API Response:", JSON.stringify(response, null, 2)); // Debugging log
-
-        // Extract text correctly from Gemini API response
-        const aiGeneratedScript = response.response.candidates[0]?.content?.parts?.[0]?.text || "No script generated.";
-
-        console.log("Generated Script:", aiGeneratedScript);
-
-        // Format script into structured segments
-        const segments = aiGeneratedScript.split("\n").map(line => {
-            const match = line.match(/^\*\*([^*]+)\*\*:\s*(.*)$/);
-            return match ? { speaker: match[1], text: match[2] } : null;
-        }).filter(segment => segment !== null);
-
-        res.json({
-            success: true,
-            script: aiGeneratedScript,
-            segments: segments
-        });
+        // If transcript is provided, return it
+        return res.json({ success: true, script: transcript });
 
     } catch (error) {
-        console.error("Error generating podcast script:", error);
-        res.status(500).json({ error: "Failed to generate podcast script" });
+        console.error("Error processing podcast:", error);
+        res.status(500).json({ error: "Failed to generate podcast." });
     }
 });
-
 
 app.post("/api/text-to-speech", async (req, res) => {
     try {
@@ -182,7 +163,9 @@ app.post("/api/text-to-speech", async (req, res) => {
         // Stream the audio response into a file
         await streamPipeline(response.body, fileStream);
 
-        res.json({ success: true, audioUrl: filePath });
+        res.json({ success: true, audioUrl: `/generated/${path.basename(filePath)}` });
+
+        // res.json({ success: true, audioUrl: filePath });
 
     } catch (error) {
         console.error("Error generating speech:", error);
